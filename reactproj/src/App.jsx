@@ -23,7 +23,7 @@ function App() {
 
   const updateLocalTodo = (id, UpdatedItem) => {
     const updated = getLocalTodos().map((todo) =>
-      todo.id === id ? { ...todo, todo: UpdatedItem } : todo
+      todo.id === id ? { ...todo, todo: UpdatedItem } : todo,
     );
     setLocalTodos(updated);
   };
@@ -84,7 +84,7 @@ function App() {
 
   const HandleCheck = (id) => {
     setCheck((prev) =>
-      prev.includes(id) ? prev.filter((items) => items !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((items) => items !== id) : [...prev, id],
     );
   };
 
@@ -101,7 +101,7 @@ function App() {
         userId: Math.floor(Math.random() * 1000),
         date: new Date().toLocaleString(),
       };
-      const response = await axios.post("http://localhost:8000/create", {
+      const response = await axios.post("/api/todos", {
         newtodos: todolist,
       });
 
@@ -129,15 +129,15 @@ function App() {
 
   const UpdateTodo = async (id) => {
     try {
-      const response = await axios.put(`http://localhost:8000/update/${id}`, {
+      const response = await axios.put(`/api/todos/${id}`, {
         updatedText: edittext.todo,
       });
       const UpdatedItem = response.data.updatedTodo;
       updateLocalTodo(id, UpdatedItem);
       setTodo((prevTodos) =>
         prevTodos.map((todos) =>
-          todos.id === id ? { ...todos, todo: UpdatedItem } : todos
-        )
+          todos.id === id ? { ...todos, todo: UpdatedItem } : todos,
+        ),
       );
       setModal({});
     } catch (error) {
@@ -146,11 +146,9 @@ function App() {
   };
 
   const HandleDelete = async (itemId) => {
-    const DeleteTodo = await axios.delete(
-      `http://localhost:8000/delete/${itemId}`
-    );
+    const DeleteTodo = await axios.delete(`/api/todos?id=${itemId}`);
     console.log("ddddddddd", DeleteTodo);
-    const DeleteItem = parseInt(DeleteTodo.data.deleteId);
+    const DeleteItem = DeleteTodo.data.deleteId;
     deleteLocalTodo(DeleteItem);
     setTodo((prevTodos) => prevTodos.filter((item) => item.id !== DeleteItem));
     console.log("deleteeeee", todo);
@@ -184,7 +182,7 @@ function App() {
               ,{""}
               {(() => {
                 const day = new Date().getDate();
-                console.log("dayyy",day);
+                console.log("dayyy", day);
 
                 if (day >= 11 && day <= 20) {
                   return `${day}th`;
