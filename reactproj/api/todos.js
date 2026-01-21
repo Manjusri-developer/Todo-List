@@ -18,12 +18,12 @@ export default function Handler(req, res) {
 
   if (req.method === "PUT") {
     try {
-      const id = req.url.split("/").pop();
-      const { updatedText } = req.body;
+      const { id,updatedText } = req.body;
       if (id === undefined || updatedText === "") {
         return res.status(400).json({ message: "Invalid input" });
       }
       return res.status(200).json({
+        id:id,
         updatedTodo: updatedText,
       });
     } catch (error) {

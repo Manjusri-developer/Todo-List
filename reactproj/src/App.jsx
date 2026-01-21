@@ -9,7 +9,7 @@ function App() {
   const [showInput, setShowInput] = useState(false);
   const [newtodo, setNewtodo] = useState("");
   const [modal, setModal] = useState({});
-  const [edittext, setEdittext] = useState({});
+  const [edittext, setEdittext] = useState({ index: null, todo: "" });
 
   const modalRef = useRef(null);
 
@@ -47,24 +47,17 @@ function App() {
       try {
         const response = await axios.get("https://dummyjson.com/todos");
         const apiTodos = response.data.todos;
-        const NewTodos = getLocalTodos();
-        const combined = [...apiTodos];
-
-        if (Array.isArray(NewTodos)) {
-          NewTodos.forEach((newTodo) => {
-            const exists = combined.find((item) => item.id === newTodo.id);
-            if (!exists) {
-              combined.push(newTodo);
-            }
-          });
+        const stored = getLocalTodos();
+        if (!stored.length) {
+          setLocalTodos(apiTodos);
+          setTodo(apiTodos);
+        } else {
+          setTodo(stored);
         }
-        console.log("------todoss", todo);
-        setTodo(combined);
       } catch (error) {
         console.log(error);
       }
     };
-
     CreateTodos();
   }, []);
 
@@ -80,7 +73,7 @@ function App() {
     return () => {
       document.removeEventListener("mousedown", handleOutsideClick);
     };
-  }, [modal]);
+  }, []);
 
   const HandleCheck = (id) => {
     setCheck((prev) =>
@@ -111,9 +104,8 @@ function App() {
 
       setLocalTodos([...existing, addedTodo]);
 
-      setTodo((prev) => [...prev, addedTodo]);
+      setTodo((prev) => [addedTodo, ...prev]);
       setNewtodo("");
-      console.log("----------addedddtodo", todo);
       setShowInput(false);
     }
   };
@@ -128,15 +120,17 @@ function App() {
   };
 
   const UpdateTodo = async (id) => {
+    if (!edittext.todo.trim()) return;
     try {
-      const response = await axios.put(`/api/todos/${id}`, {
+      const response = await axios.put("/api/todos", {
+        id: id,
         updatedText: edittext.todo,
       });
-      const UpdatedItem = response.data.updatedTodo;
-      updateLocalTodo(id, UpdatedItem);
+      const { id: updatedId, updatedTodo } = response.data;
+      updateLocalTodo(updatedId, updatedTodo);
       setTodo((prevTodos) =>
         prevTodos.map((todos) =>
-          todos.id === id ? { ...todos, todo: UpdatedItem } : todos,
+          todos.id === id ? { ...todos, todo: updatedTodo } : todos,
         ),
       );
       setModal({});
@@ -147,11 +141,9 @@ function App() {
 
   const HandleDelete = async (itemId) => {
     const DeleteTodo = await axios.delete(`/api/todos?id=${itemId}`);
-    console.log("ddddddddd", DeleteTodo);
     const DeleteItem = DeleteTodo.data.deleteId;
     deleteLocalTodo(DeleteItem);
     setTodo((prevTodos) => prevTodos.filter((item) => item.id !== DeleteItem));
-    console.log("deleteeeee", todo);
   };
 
   return (
@@ -270,145 +262,143 @@ function App() {
             {todo
               .filter((todo) => !check.includes(todo.id))
               .map((items, index) => (
-                <>
-                  <li key={items.id} className="d-flex">
-                    <div
-                      className="d-flex align-items-center ms-1 me-2 Todo-Item"
+                <li key={items.id} className="d-flex">
+                  <div
+                    className="d-flex align-items-center ms-1 me-2 Todo-Item"
+                    style={{
+                      position: "relative",
+                      "--bgcolor": colors[index % colors.length],
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      className="me-3"
+                      checked={check.includes(items.id)}
+                      onChange={() => HandleCheck(items.id)}
                       style={{
-                        position: "relative",
-                        "--bgcolor": colors[index % colors.length],
+                        width: "20px",
+                        height: "20px",
+                        accentColor: "rgb(218, 113, 121)",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <p
+                      className={`py-3 mb-0 ${
+                        check.includes(items.id)
+                          ? "text-decoration-line-through opacity-50"
+                          : ""
+                      }`}
+                      style={{
+                        overflow: "hidden",
+                        textAlign: "start",
+                        flexGrow: 1,
+                        wordWrap: "break-word",
+                        lineHeight: "1.5",
                       }}
                     >
-                      <input
-                        type="checkbox"
-                        className="me-3"
-                        checked={check.includes(items.id)}
-                        onChange={() => HandleCheck(items.id)}
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          accentColor: "rgb(218, 113, 121)",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <p
-                        className={`py-3 mb-0 ${
-                          check.includes(items.id)
-                            ? "text-decoration-line-through opacity-50"
-                            : ""
-                        }`}
-                        style={{
-                          overflow: "hidden",
-                          textAlign: "start",
-                          flexGrow: 1,
-                          wordWrap: "break-word",
-                          lineHeight: "1.5",
-                        }}
-                      >
-                        {items.todo}
-                      </p>
+                      {items.todo}
+                    </p>
 
-                      {modal.index === items.id ? (
-                        <>
-                          <div ref={modalRef}>
-                            <textarea
-                              type="text"
-                              className="text-area rounded px-2 text-wrap"
-                              value={edittext.todo}
-                              onChange={(e) =>
-                                setEdittext({
-                                  ...edittext,
-                                  todo: e.target.value,
-                                })
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") UpdateTodo(items.id);
-                              }}
-                              style={{
-                                position: "absolute",
-                                zIndex: 2,
-                                left: 30,
-                                top: 30,
-                                border: "2px solid rgb(218, 113, 121)",
-                                outline: "none",
-                                boxShadow:
-                                  "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)",
-                              }}
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        ""
-                      )}
+                    {modal.index === items.id ? (
+                      <>
+                        <div ref={modalRef}>
+                          <textarea
+                            type="text"
+                            className="text-area rounded px-2 text-wrap"
+                            value={edittext.todo}
+                            onChange={(e) =>
+                              setEdittext({
+                                ...edittext,
+                                todo: e.target.value,
+                              })
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") UpdateTodo(items.id);
+                            }}
+                            style={{
+                              position: "absolute",
+                              zIndex: 2,
+                              left: 30,
+                              top: 30,
+                              border: "2px solid rgb(218, 113, 121)",
+                              outline: "none",
+                              boxShadow:
+                                "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)",
+                            }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      ""
+                    )}
 
-                      <div
-                        className=""
-                        style={{
-                          color: "rgba(128, 128, 128, 0.9)",
-                          fontSize: "0.9rem",
-                        }}
-                      >
-                        <div className="mt-2 ms-4 d-flex flex-row gap-3 rounded">
-                          {modal.index === items.id ? (
-                            <>
-                              <button onClick={() => UpdateTodo(items.id)}>
-                                Save
-                              </button>
-                            </>
-                          ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              fill="currentColor"
-                              className="bi bi-pencil-fill"
-                              style={{
-                                flexShrink: 0,
-                                color: "rgba(60, 60, 60, 0.9)",
-                                fontSize: "0.9rem",
-                              }}
-                              viewBox="0 0 16 16"
-                              onClick={() => HandleClick(items.id, items.todo)}
-                            >
-                              <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z" />
-                            </svg>
-                          )}
-
+                    <div
+                      className=""
+                      style={{
+                        color: "rgba(128, 128, 128, 0.9)",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      <div className="mt-2 ms-4 d-flex flex-row gap-3 rounded">
+                        {modal.index === items.id ? (
+                          <>
+                            <button onClick={() => UpdateTodo(items.id)}>
+                              Save
+                            </button>
+                          </>
+                        ) : (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="16"
                             height="16"
                             fill="currentColor"
-                            className="bi bi-trash3-fill"
-                            onClick={() => HandleDelete(items.id)}
-                            viewBox="0 0 16 16"
+                            className="bi bi-pencil-fill"
                             style={{
                               flexShrink: 0,
                               color: "rgba(60, 60, 60, 0.9)",
+                              fontSize: "0.9rem",
                             }}
+                            viewBox="0 0 16 16"
+                            onClick={() => HandleClick(items.id, items.todo)}
                           >
-                            <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5" />
+                            <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z" />
                           </svg>
-                        </div>
+                        )}
 
-                        <div className="mt-1 ms-3">
-                          {items.date ? (
-                            <>
-                              <p className="mb-0">
-                                {new Date(items.date).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </p>
-                            </>
-                          ) : (
-                            <> 8:00 AM </>
-                          )}
-                        </div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          fill="currentColor"
+                          className="bi bi-trash3-fill"
+                          onClick={() => HandleDelete(items.id)}
+                          viewBox="0 0 16 16"
+                          style={{
+                            flexShrink: 0,
+                            color: "rgba(60, 60, 60, 0.9)",
+                          }}
+                        >
+                          <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5" />
+                        </svg>
+                      </div>
+
+                      <div className="mt-1 ms-3">
+                        {items.date ? (
+                          <>
+                            <p className="mb-0">
+                              {new Date(items.date).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </>
+                        ) : (
+                          <> 8:00 AM </>
+                        )}
                       </div>
                     </div>
-                  </li>
-                </>
+                  </div>
+                </li>
               ))}
 
             {check.length > 0 ? (
