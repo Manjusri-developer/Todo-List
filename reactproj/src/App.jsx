@@ -299,8 +299,10 @@ function App() {
                         }`}
                         style={{
                           overflow: "hidden",
-                          textAlign: "justify",
+                          textAlign: "start",
                           flexGrow: 1,
+                          wordWrap: "break-word",
+                          lineHeight: "1.5",
                         }}
                       >
                         {items.todo}
