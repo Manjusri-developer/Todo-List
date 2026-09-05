@@ -1,0 +1,33 @@
+:root {
+  color-scheme: dark;
+  --bg: #07090f;
+  --bg-elev: rgba(18, 22, 36, 0.72);
+  --line: rgba(255, 255, 255, 0.08);
+  --text: #f4f1ea;
+  --muted: #9aa3b5;
+  --accent: #c8f542;
+  --accent-2: #7cf0d2;
+  --danger: #ff7a7a;
+  --high: #ff8a5b;
+  --med: #f5d06f;
+  --low: #7cf0d2;
+  --shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  --radius: 28px;
+  --sans: 'Instrument Sans', system-ui, sans-serif;
+  --serif: 'Instrument Serif', Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--sans);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(124, 240, 210, 0.16), transparent 50%),
+    radial-gradient(900px 500px at 110% 10%, rgba(200, 245, 66, 0.12), transparent 45%),
+    radial-gradient(700px 500px at 50% 120%, rgba(120, 90, 255, 0.16), transparent 50%),
+    var(--bg);
+  color: var(--text);
+}
+button, input, select { font-family: inherit; }
+button { cursor: pointer; }
